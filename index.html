@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unity Dev Board // Classic Layout</title>
+    <title>Unity Dev Board // No Header Box</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap');
@@ -16,6 +16,7 @@
             border-radius: 20px;
             box-shadow: 10px 10px 20px #cfd7dd, -10px -10px 20px #ffffff;
             border: 1px solid rgba(255,255,255,0.8);
+            transition: all 0.3s ease;
         }
 
         .neu-btn {
@@ -26,6 +27,7 @@
             transition: all 0.2s;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
         }
         .neu-btn:active { box-shadow: inset 4px 4px 8px #cfd7dd, inset -4px -4px 8px #ffffff; }
@@ -45,28 +47,25 @@
         .tag-code { background: #bee3f8; color: #2c5282; }
         .tag-art { background: #e9d8fd; color: #553c9a; }
         .tag-bug { background: #fed7d7; color: #9b2c2c; }
+
+        .card-todo { background: #e6eef4; }
+        .card-progress { background: #dbeafe; box-shadow: 10px 10px 20px #c3d1e0, -10px -10px 20px #ffffff; }
+        .card-done { background: #dcfce7; box-shadow: 10px 10px 20px #c4dfcc, -10px -10px 20px #ffffff; }
     </style>
 </head>
 <body class="p-6 md:p-12">
 
-    <header class="max-w-7xl mx-auto mb-12 p-8 neu-panel flex flex-col md:flex-row justify-between items-center gap-8">
-        <div class="w-full md:w-auto text-left">
-            <input id="proj-name" oninput="save()" class="text-4xl font-black bg-transparent border-none outline-none w-full md:w-[400px]" value="PROJECT_SALOON">
-            <p class="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mt-2">Environment Control v4.3</p>
-        </div>
-        
-        <div class="flex flex-wrap justify-end gap-4 w-full md:w-auto">
-            <button onclick="downloadConfig()" class="neu-btn px-6 py-3 text-xs uppercase">
-                <span>💾</span> Export JSON
-            </button>
-            <label class="neu-btn px-6 py-3 text-xs uppercase cursor-pointer">
-                <span>📂</span> Import File <input type="file" class="hidden" onchange="uploadConfig(event)">
-            </label>
-            <button onclick="toggleEdit()" id="edit-btn" class="neu-btn px-6 py-3 text-xs uppercase text-blue-600 border-2 border-blue-500/20">
-                <span>⚙️</span> Edit: Off
-            </button>
-        </div>
-    </header>
+    <div class="max-w-7xl mx-auto mb-12 flex justify-end gap-4">
+        <button onclick="downloadConfig()" class="neu-btn px-6 py-3 text-xs uppercase">
+            <span>💾</span> Export JSON
+        </button>
+        <label class="neu-btn px-6 py-3 text-xs uppercase cursor-pointer">
+            <span>📂</span> Import File <input type="file" class="hidden" onchange="uploadConfig(event)">
+        </label>
+        <button onclick="toggleEdit()" id="edit-btn" class="neu-btn px-6 py-3 text-xs uppercase text-blue-600 border-2 border-blue-500/20">
+            <span>⚙️</span> Edit: Off
+        </button>
+    </div>
 
     <main class="max-w-7xl mx-auto space-y-16">
         
@@ -119,12 +118,15 @@
 
     <script>
         let isEdit = false;
-        let db = JSON.parse(localStorage.getItem('unity_classic_db')) || {
-            name: "SALOON_VR",
-            tasks: [{text: "Настроить физику револьвера", tag: "code", status: "todo"}],
+        let db = JSON.parse(localStorage.getItem('unity_dev_db')) || {
+            tasks: [
+                {text: "Настроить физику револьвера", tag: "code", status: "todo"},
+                {text: "Интеграция XR Interaction Toolkit", tag: "code", status: "progress"},
+                {text: "Запекание света в салуне", tag: "art", status: "done"}
+            ],
             layers: [{id: "6", name: "Player_Body"}],
             balance: [{key: "Gravity", val: "-9.81"}],
-            snippets: [{title: "Start", code: "void Start() {}"}]
+            snippets: [{title: "OnTriggerEnter", code: "void OnTriggerEnter(Collider other) {\n    // logic\n}"}]
         };
 
         function toggleEdit() {
@@ -138,19 +140,27 @@
             Object.values(cols).forEach(c => c.innerHTML = '');
             
             db.tasks.forEach((t, i) => {
+                let statusClass = 'card-todo';
+                let statusIcon = '⏳';
+                if (t.status === 'progress') { statusClass = 'card-progress'; statusIcon = '⚡'; }
+                if (t.status === 'done') { statusClass = 'card-done'; statusIcon = '✅'; }
+
                 const card = document.createElement('div');
-                card.className = 'neu-panel p-6 space-y-4';
+                card.className = `neu-panel p-6 space-y-4 ${statusClass}`;
                 card.innerHTML = `
                     <div class="flex justify-between items-center">
-                        <span class="tag tag-${t.tag}">${t.tag}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs">${statusIcon}</span>
+                            <span class="tag tag-${t.tag}">${t.tag}</span>
+                        </div>
                         ${isEdit ? `<button onclick="remove('tasks', ${i})" class="text-red-500 text-xl font-black">✕</button>` : ''}
                     </div>
-                    ${isEdit ? `<textarea class="w-full font-bold" oninput="db.tasks[${i}].text=this.value;save()">${t.text}</textarea>` 
+                    ${isEdit ? `<textarea class="w-full font-bold bg-white/40" oninput="db.tasks[${i}].text=this.value;save()">${t.text}</textarea>` 
                              : `<p class="task-card-text font-bold text-slate-800">${t.text}</p>`}
-                    <div class="flex gap-3 pt-2">
-                        ${t.status !== 'todo' ? `<button onclick="move(${i}, 'todo')" class="neu-btn flex-1 py-2 text-[10px]">BACK</button>` : ''}
-                        ${t.status !== 'progress' ? `<button onclick="move(${i}, 'progress')" class="neu-btn flex-1 py-2 text-[10px]">START</button>` : ''}
-                        ${t.status !== 'done' ? `<button onclick="move(${i}, 'done')" class="neu-btn flex-1 py-2 text-[10px]">DONE</button>` : ''}
+                    <div class="flex gap-2 pt-2">
+                        ${t.status !== 'todo' ? `<button onclick="move(${i}, 'todo')" class="neu-btn bg-white/50 flex-1 py-2 text-[9px]">BACK</button>` : ''}
+                        ${t.status !== 'progress' ? `<button onclick="move(${i}, 'progress')" class="neu-btn bg-white/50 flex-1 py-2 text-[9px]">START</button>` : ''}
+                        ${t.status !== 'done' ? `<button onclick="move(${i}, 'done')" class="neu-btn bg-white/50 flex-1 py-2 text-[9px]">DONE</button>` : ''}
                     </div>
                 `;
                 cols[t.status].appendChild(card);
@@ -159,21 +169,21 @@
             document.getElementById('layers-list').innerHTML = db.layers.map((l, i) => `
                 <div class="flex gap-4 items-center border-b-2 border-slate-200 pb-3">
                     <input class="w-16 text-center text-blue-700 font-black" value="${l.id}" oninput="db.layers[${i}].id=this.value;save()" ${!isEdit?'disabled':''}>
-                    <input class="flex-1 font-bold text-lg" value="${l.name}" oninput="db.layers[${i}].name=this.value;save()" ${!isEdit?'disabled':''}>
+                    <input class="flex-1 font-bold text-lg bg-transparent" value="${l.name}" oninput="db.layers[${i}].name=this.value;save()" ${!isEdit?'disabled':''}>
                     ${isEdit ? `<button onclick="remove('layers', ${i})" class="text-red-500 font-black px-2 text-xl">✕</button>` : ''}
                 </div>
             `).join('');
 
             document.getElementById('balance-list').innerHTML = db.balance.map((b, i) => `
                 <div class="flex gap-4 items-center border-b-2 border-slate-200 pb-3">
-                    <input class="w-[65%] font-bold text-slate-600" value="${b.key}" oninput="db.balance[${i}].key=this.value;save()" ${!isEdit?'disabled':''}>
+                    <input class="w-[65%] font-bold text-slate-600 bg-transparent" value="${b.key}" oninput="db.balance[${i}].key=this.value;save()" ${!isEdit?'disabled':''}>
                     <input class="w-[35%] text-right font-black text-blue-900 text-lg" value="${b.val}" oninput="db.balance[${i}].val=this.value;save()" ${!isEdit?'disabled':''}>
                     ${isEdit ? `<button onclick="remove('balance', ${i})" class="text-red-500 font-black ml-2 text-xl">✕</button>` : ''}
                 </div>
             `).join('');
 
             document.getElementById('snippets-list').innerHTML = db.snippets.map((s, i) => `
-                <div class="neu-panel p-6 bg-white/40">
+                <div class="neu-panel p-6 bg-white/20">
                     <input class="w-full font-black text-blue-800 text-sm uppercase mb-3 bg-transparent border-none p-0" value="${s.title}" oninput="db.snippets[${i}].title=this.value;save()" ${!isEdit?'disabled':''}>
                     <textarea class="w-full h-48 mono text-[13px] p-4 bg-slate-900 text-green-400 rounded-xl shadow-inner" oninput="db.snippets[${i}].code=this.value;save()" ${!isEdit?'disabled':''}>${s.code}</textarea>
                     ${isEdit ? `<button onclick="remove('snippets', ${i})" class="text-xs text-red-500 font-black mt-4 uppercase tracking-widest">Delete Block</button>` : ''}
@@ -202,7 +212,7 @@
             const t = { layers: {id:"0", name:"NewLayer"}, balance: {key:"Variable", val:"0"}, snippets: {title:"NewSnippet", code:"// logic"} };
             db[cat].push(t[cat]); render();
         }
-        function save() { localStorage.setItem('unity_classic_db', JSON.stringify(db)); }
+        function save() { localStorage.setItem('unity_dev_db', JSON.stringify(db)); }
         function downloadConfig() {
             const blob = new Blob([JSON.stringify(db, null, 2)], {type : 'application/json'});
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
